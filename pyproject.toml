@@ -1,0 +1,30 @@
+[tool.black]
+line-length = 120
+extend-exclude = "source/"
+
+[tool.isort]
+profile = "black"
+skip = "source"
+
+[tool.pylint.main]
+jobs = 0
+disable = [
+    "bad-indentation",
+    "bare-except",
+    "fixme",
+    "global-statement",
+    "import-outside-toplevel",
+    "invalid-str-returned",
+    "line-too-long",
+    "missing-module-docstring",
+    "missing-timeout",
+    "no-member",
+    "protected-access",
+    "unspecified-encoding",
+]
+include-naming-hint = "y"
+
+[tool.pylint.basic]
+allowed-redefined-builtins = ["id", "input"]
+good-names = ["a", "b", "c", "f", "i", "x", "y", "z", "db", "id", "iv", "md", "pk"]
+no-docstring-rgx = "^_|^main$"
