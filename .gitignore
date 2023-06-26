@@ -162,5 +162,3 @@ cython_debug/
 # downloaded songs
 *.webm
 *.mp3
-source/*
-!source/conf.py
