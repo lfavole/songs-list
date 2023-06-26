@@ -26,6 +26,9 @@ jobs:
           python -m pip install songs-dl unidecode tqdm
           python -m pip install -r requirements.txt
 
+      - name: Install ffmpeg
+        run: sudo apt-get install -y ffmpeg
+
       - name: Download songs
         run: python build.py
 
