@@ -20,20 +20,27 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Get pip cache dir
+        id: pip-cache
+        run: echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - name: pip cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-build
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install songs-dl unidecode tqdm
-          python -m pip install -r requirements.txt
+          python -m pip install --upgrade songs-dl unidecode tqdm
+        # FIXME Remove dependencies when added to songs-dl requirements
 
       - name: Install ffmpeg
         run: sudo apt-get install -y ffmpeg
 
-      - name: Download songs
+      - name: Download songs and build website
         run: python build.py
-
-      - name: Build website
-        run: sphinx-build -b html source/ build/
 
       - uses: actions/upload-pages-artifact@v1
         with:
