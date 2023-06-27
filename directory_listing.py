@@ -1,9 +1,10 @@
 import datetime as dt
 import html
 import os.path
+import re
 from pathlib import Path
 
-SLASH = "\\"
+ANTISLASH = "\\"
 
 
 # https://stackoverflow.com/a/1094933
@@ -32,22 +33,26 @@ def make_directory_listing(folder: Path, base_path: Path | None = None):
     The `base_path` is used to format the title.
     """
     content = f"""\
-<h1>Index of {relative_or_path(folder, base_path)}</h1>
+<h1>Index of {str(relative_or_path(folder, base_path)).replace(ANTISLASH, "/")}</h1>
 <table>
     <tr>
-        <td>Name</td>
-        <td>Last modified</td>
-        <td>Size</td>
+        <th>Name</th>
+        <th>Last modified</th>
+        <th>Size</th>
     </tr>
 """
 
-    for path in sorted(folder.iterdir(), key=lambda path: path.is_dir()):
-        path_escaped = html.escape(str(path.relative_to(folder)).replace(SLASH, "/")) + ("/" if path.is_dir() else "")
+    paths = sorted(folder.iterdir(), key=lambda path: path.is_dir())
+    if folder.parent != folder:
+        paths.insert(0, folder.parent)
+
+    for path in paths:
+        path_escaped = str(os.path.relpath(path, folder)).replace(ANTISLASH, "/") + ("/" if path.is_dir() else "")
         content += f"""\
 <tr>
-    <td><a href="{path_escaped}">{path_escaped}</a></td>
-    <td>{dt.datetime.fromtimestamp(os.path.getmtime(path))}</td>
-    <td>{sizeof_fmt(os.path.getsize(path))}</td>
+    <td><a href="{html.escape(path_escaped, quote=True)}">{html.escape(path_escaped)}</a></td>
+    <td>{dt.datetime.fromtimestamp(int(os.path.getmtime(path)))}</td>
+    <td>{"" if path.is_dir() else sizeof_fmt(os.path.getsize(path))}</td>
 </tr>
 """
 
@@ -58,25 +63,26 @@ def make_directory_listing(folder: Path, base_path: Path | None = None):
     return content
 
 
-def write_directory_listing(folder: Path, base_path: Path | None = None):
+def write_directory_listing(folder: Path, base_path: Path | None = None, template: str = "%(content)s"):
     """
     Write a directory listing for the given `folder`.
 
     The `base_path` is used to format the title.
     """
     data = make_directory_listing(folder, base_path)
+    match = re.search(r"<h1>(.*?)</h1>", data)
     with open(folder / "index.html", "w") as f:
-        f.write(data)
+        f.write(template % {"title": match.group(1) if match else "Directory listing", "content": data})
 
 
-def write_directory_listing_recursive(folder: Path, base_path: Path | None = None):
+def write_directory_listing_recursive(folder: Path, base_path: Path | None = None, template: str = "%(content)s"):
     """
     Write a directory listing for the given `folder` and all subfolders, recursively.
 
     The `base_path` is used to format the title.
     """
-    write_directory_listing(folder, base_path)
+    write_directory_listing(folder, base_path, template)
     for path in folder.iterdir():
         if not path.is_dir():
             continue
-        write_directory_listing_recursive(path, base_path)
+        write_directory_listing_recursive(path, base_path, template)

@@ -7,7 +7,6 @@ import shutil
 import sys
 import traceback
 from pathlib import Path
-from urllib.parse import quote
 
 from songs_dl import download_song as real_dl  # type: ignore
 
@@ -49,7 +48,7 @@ def main(fake=False):
 
         path = Path(path_str)
         ret = path.replace(songs_output / path.name)
-        logger.debug("Song %s moved to %s", path, ret)
+        logger.debug("Song '%s' moved to '%s'", path, ret)
         return ret
 
     enc = "utf-8"
@@ -66,8 +65,8 @@ def main(fake=False):
     logger.debug("songs_output=%r", songs_output)
     logger.debug("index=%r", index)
 
-    page_model = (BASE / "page_model.html").read_text(enc)
-    logger.debug("page model loaded, length = %d", len(page_model))
+    page_template = (BASE / "page_template.html").read_text(enc)
+    logger.debug("page template loaded, length = %d", len(page_template))
 
     index_content = """\
 <h1>Chansons</h1>
@@ -112,10 +111,11 @@ def main(fake=False):
                 relative_path = ""
                 extra = ' <span style="color:red">(erreur)</span>'
             else:
-                relative_path = os.path.relpath(path, output_file).replace(ANTISLASH, "/")
+                # relative_path = os.path.relpath(path, output_file.parent).replace(ANTISLASH, "/")
+                relative_path = os.path.relpath(path, output_file.parent)
                 extra = ""
             content += f"""\
-    <li><a href="{html.escape(quote(relative_path))}">{html.escape(song)}{extra}</a></li>
+    <li><a href="{html.escape(relative_path, quote=True)}">{html.escape(relative_path or song)}{extra}</a></li>
 """
 
         content += """\
@@ -123,11 +123,11 @@ def main(fake=False):
 """
 
         with output_file.open("w", encoding=enc) as f:
-            f.write(page_model % {"title": file.name, "content": content})
+            f.write(page_template % {"title": file.name, "content": content})
 
         relative_path = os.path.relpath(output_file, index.parent)
         index_content += f"""\
-    <li><a href="{html.escape(quote(relative_path))}">{file.name}</a></li>
+    <li><a href="{html.escape(relative_path, quote=True)}">{html.escape(file.name)}</a></li>
 """
 
     index_content += """\
@@ -135,16 +135,16 @@ def main(fake=False):
 """
 
     with index.open("w", encoding=enc) as f:
-        f.write(page_model % {"title": "Chansons", "content": index_content.replace("\\", "/")})
+        f.write(page_template % {"title": "Chansons", "content": index_content.replace("\\", "/")})
 
-    write_directory_listing_recursive(repo)
+    write_directory_listing_recursive(repo, pages_output, page_template)
     write_zipfile_recursive(repo)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose", action="count", help="show more information")
-    parser.add_argument("--fake", help="create a build with fake songs")
+    parser.add_argument("--fake", action="store_true", help="create a build with fake songs")
     args = parser.parse_args()
 
     logging.root.setLevel(

@@ -14,6 +14,7 @@ disable = [
     "fixme",
     "global-statement",
     "import-outside-toplevel",
+    "import-error",
     "invalid-str-returned",
     "line-too-long",
     "missing-module-docstring",
